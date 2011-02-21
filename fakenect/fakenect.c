@@ -23,14 +23,21 @@
  * either License.
  */
 
-#include <libfreenect.h>
+#include "libfreenect.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
 #include <unistd.h>
-#include <time.h>
 #include <assert.h>
+
+#ifndef WIN32
+#include <time.h>
+#else
+#include <Windows.h>
+#include "wintime.h"
+#endif
+
 
 #define GRAVITY 9.80665
 
@@ -42,7 +49,7 @@ static freenect_depth_cb cur_depth_cb = NULL;
 static freenect_video_cb cur_rgb_cb = NULL;
 static char *input_path = NULL;
 static FILE *index_fp = NULL;
-static freenect_raw_tilt_state state = {};
+static freenect_raw_tilt_state state;
 static int already_warned = 0;
 static double playback_prev_time = 0.;
 static double record_prev_time = 0.;
@@ -57,8 +64,12 @@ static void sleep_highres(double tm)
 	int sec = floor(tm);
 	int usec = (tm - sec) * 1000000;
 	if (tm > 0) {
+#ifdef WIN32
+		Sleep(sec);
+#else
 		sleep(sec);
 		usleep(usec);
+#endif
 	}
 }
 
@@ -77,11 +88,11 @@ static char *one_line(FILE *fp)
 	while ((c = fgetc(fp))) {
 		if (c == '\n' || c == EOF)
 			break;
-		out = realloc(out, pos + 1);
+		out = (char *)realloc(out, pos + 1);
 		out[pos++] = c;
 	}
 	if (out) {
-		out = realloc(out, pos + 1);
+		out = (char *)realloc(out, pos + 1);
 		out[pos] = '\0';
 	}
 	return out;
@@ -89,25 +100,29 @@ static char *one_line(FILE *fp)
 
 static int get_data_size(FILE *fp)
 {
-	int orig = ftell(fp);
+	int out, orig;
+	orig = ftell(fp);
 	fseek(fp, 0L, SEEK_END);
-	int out = ftell(fp);
+	out = ftell(fp);
 	fseek(fp, orig, SEEK_SET);
 	return out;
 }
 
 static int parse_line(char *type, double *cur_time, unsigned int *timestamp, unsigned int *data_size, char **data)
 {
+	int file_path_size;
+	char *file_path;
+	FILE *cur_fp;
 	char *line = one_line(index_fp);
 	if (!line) {
 		printf("Warning: No more lines in [%s]\n", input_path);
 		return -1;
 	}
-	int file_path_size = strlen(input_path) + strlen(line) + 50;
-	char *file_path = malloc(file_path_size);
-	snprintf(file_path, file_path_size, "%s/%s", input_path, line);
+	file_path_size = strlen(input_path) + strlen(line) + 50;
+	file_path = (char *) malloc(file_path_size);
+	sprintf(file_path, (const char *) file_path_size, "%s/%s", input_path, line);
 	// Open file
-	FILE *cur_fp = fopen(file_path, "r");
+	cur_fp = fopen(file_path, "r");
 	if (!cur_fp) {
 		printf("Error: Cannot open file [%s]\n", file_path);
 		exit(1);
@@ -115,7 +130,7 @@ static int parse_line(char *type, double *cur_time, unsigned int *timestamp, uns
 	// Parse data from file name
 	*data_size = get_data_size(cur_fp);
 	sscanf(line, "%c-%lf-%u-%*s", type, cur_time, timestamp);
-	*data = malloc(*data_size);
+	*data = (char *) malloc(*data_size);
 	if (fread(*data, *data_size, 1, cur_fp) != 1) {
 		printf("Error: Couldn't read entire file.\n");
 		return -1;
@@ -128,14 +143,16 @@ static int parse_line(char *type, double *cur_time, unsigned int *timestamp, uns
 
 static void open_index()
 {
+	int index_path_size;
+	char *index_path;
 	input_path = getenv("FAKENECT_PATH");
 	if (!input_path) {
 		printf("Error: Environmental variable FAKENECT_PATH is not set.  Set it to a path that was created using the 'record' utility.\n");
 		exit(1);
 	}
-	int index_path_size = strlen(input_path) + 50;
-	char *index_path = malloc(index_path_size);
-	snprintf(index_path, index_path_size, "%s/INDEX.txt", input_path);
+	index_path_size = strlen(input_path) + 50;
+	index_path = (char *)malloc(index_path_size);
+	sprintf(index_path, (const char *) index_path_size, "%s/INDEX.txt", input_path);
 	index_fp = fopen(index_path, "r");
 	if (!index_fp) {
 		printf("Error: Cannot open file [%s]\n", index_path);
@@ -165,12 +182,15 @@ int freenect_process_events(freenect_context *ctx)
 	   best as we can to match those from the original data and current run
 	   conditions (e.g., if it takes longer to run this code then we wait less).
 	 */
-	if (!index_fp)
-		open_index();
+
 	char type;
 	double record_cur_time;
 	unsigned int timestamp, data_size;
 	char *data = NULL;
+
+	if (!index_fp)
+		open_index();
+
 	if (parse_line(&type, &record_cur_time, &timestamp, &data_size, &data))
 		return -1;
 	// Sleep an amount that compensates for the original and current delays

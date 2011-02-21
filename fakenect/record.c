@@ -30,7 +30,14 @@
 #include <signal.h>
 #include <string.h>
 #include <stdlib.h>
+
+//Windows Time Declarations
+#ifndef WIN32
 #include <sys/time.h>
+#else
+#include <Windows.h>
+#include "wintime.h"
+#endif
 
 char *out_dir;
 volatile sig_atomic_t running = 1;
@@ -59,11 +66,13 @@ void dump_rgb(FILE *fp, void *data, int data_size)
 
 FILE *open_dump(char type, double cur_time, uint32_t timestamp, int data_size, const char *extension)
 {
-	char *fn = malloc(strlen(out_dir) + 50);
+	FILE* fp;
+	char *fn = (char *) malloc(strlen(out_dir) + 50);
+
 	sprintf(fn, "%c-%f-%u.%s", type, cur_time, timestamp, extension);
 	fprintf(index_fp, "%s\n", fn);
 	sprintf(fn, "%s/%c-%f-%u.%s", out_dir, type, cur_time, timestamp, extension);
-	FILE* fp = fopen(fn, "w");
+	fp = fopen(fn, "w");
 	if (!fp) {
 		printf("Error: Cannot open file [%s]\n", fn);
 		exit(1);
@@ -100,9 +109,11 @@ void dump(char type, uint32_t timestamp, void *data, int data_size)
 
 void snapshot_accel(freenect_device *dev)
 {
+	freenect_raw_tilt_state* state;
+
 	if (!last_timestamp)
 		return;
-	freenect_raw_tilt_state* state;
+	
 	freenect_update_tilt_state(dev);
 	state = freenect_get_tilt_state(dev);
 	dump('a', last_timestamp, state, sizeof *state);
@@ -156,14 +167,24 @@ void signal_cleanup(int num)
 
 int main(int argc, char **argv)
 {
+	char *fn; 
+
 	if (argc != 2) {
 		printf("Records the Kinect sensor data to a directory\nResult can be used as input to Fakenect\nUsage: ./record <out_dir>\n");
 		return 1;
 	}
 	out_dir = argv[1];
+
+#ifdef WIN32
+	CreateDirectory(out_dir,NULL);
+#else
 	mkdir(out_dir, S_IRWXU | S_IRWXG | S_IRWXO);
+#endif
+
 	signal(SIGINT, signal_cleanup);
-	char *fn = malloc(strlen(out_dir) + 50);
+
+	fn = (char *) malloc(strlen(out_dir) + 50);
+
 	sprintf(fn, "%s/INDEX.txt", out_dir);
 	index_fp = fopen(fn, "r");
 	if (index_fp) {
