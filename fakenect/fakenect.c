@@ -36,6 +36,10 @@
 #else
 #include <Windows.h>
 #include "wintime.h"
+
+//Windows defines of sleep and usleep. usleep not as accurate as Linux version.
+#define sleep(x) SleepEx(x*1000,TRUE);
+#define usleep(x) SleepEx(x/1000,TRUE);
 #endif
 
 
@@ -64,12 +68,8 @@ static void sleep_highres(double tm)
 	int sec = floor(tm);
 	int usec = (tm - sec) * 1000000;
 	if (tm > 0) {
-#ifdef WIN32
-		Sleep(sec);
-#else
 		sleep(sec);
 		usleep(usec);
-#endif
 	}
 }
 
