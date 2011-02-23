@@ -54,13 +54,13 @@ double get_time()
 
 void dump_depth(FILE *fp, void *data, int data_size)
 {
-	fprintf(fp, "P5 %d %d 65535\n", FREENECT_FRAME_W, FREENECT_FRAME_H);
+	fprintf(fp, "P5 %d %d 65535%c", FREENECT_FRAME_W, FREENECT_FRAME_H,0x0A);	
 	fwrite(data, data_size, 1, fp);
 }
 
 void dump_rgb(FILE *fp, void *data, int data_size)
 {
-	fprintf(fp, "P6 %d %d 255\n", FREENECT_FRAME_W, FREENECT_FRAME_H);
+	fprintf(fp, "P6 %d %d 255%c", FREENECT_FRAME_W, FREENECT_FRAME_H,0x0A);
 	fwrite(data, data_size, 1, fp);
 }
 

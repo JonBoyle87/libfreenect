@@ -40,6 +40,8 @@
 //Windows defines of sleep and usleep. usleep not as accurate as Linux version.
 #define sleep(x) SleepEx(x*1000,TRUE);
 #define usleep(x) SleepEx(x/1000,TRUE);
+
+#define snprintf sprintf_s 
 #endif
 
 
@@ -86,7 +88,7 @@ static char *one_line(FILE *fp)
 	char *out = NULL;
 	char c;
 	while ((c = fgetc(fp))) {
-		if (c == '\n' || c == EOF)
+		if (c == '\n' || c == EOF || c == 0x0A)
 			break;
 		out = (char *)realloc(out, pos + 1);
 		out[pos++] = c;
@@ -103,7 +105,7 @@ static int get_data_size(FILE *fp)
 	int out, orig;
 	orig = ftell(fp);
 	fseek(fp, 0L, SEEK_END);
-	out = ftell(fp);
+	out = ftell(fp) - 1;
 	fseek(fp, orig, SEEK_SET);
 	return out;
 }
@@ -120,7 +122,13 @@ static int parse_line(char *type, double *cur_time, unsigned int *timestamp, uns
 	}
 	file_path_size = strlen(input_path) + strlen(line) + 50;
 	file_path = (char *) malloc(file_path_size);
-	sprintf(file_path, (const char *) file_path_size, "%s/%s", input_path, line);
+	snprintf(file_path, file_path_size, 
+#ifndef WIN32
+		"%s/%s"
+#else
+		"%s\\%s"
+#endif
+		, input_path, line);
 	// Open file
 	cur_fp = fopen(file_path, "r");
 	if (!cur_fp) {
@@ -130,11 +138,14 @@ static int parse_line(char *type, double *cur_time, unsigned int *timestamp, uns
 	// Parse data from file name
 	*data_size = get_data_size(cur_fp);
 	sscanf(line, "%c-%lf-%u-%*s", type, cur_time, timestamp);
-	*data = (char *) malloc(*data_size);
-	if (fread(*data, *data_size, 1, cur_fp) != 1) {
+
+	*data = (char *) calloc(1,*data_size);
+
+	fread(*data, *data_size, 1, cur_fp);
+	/*if (fread(*data, *data_size, 1, cur_fp) < 1) {
 		printf("Error: Couldn't read entire file.\n");
 		return -1;
-	}
+	}*/
 	fclose(cur_fp);
 	free(line);
 	free(file_path);
@@ -152,7 +163,14 @@ static void open_index()
 	}
 	index_path_size = strlen(input_path) + 50;
 	index_path = (char *)malloc(index_path_size);
-	sprintf(index_path, (const char *) index_path_size, "%s/INDEX.txt", input_path);
+	snprintf(index_path, index_path_size, 
+#ifndef WIN32
+		"%s/INDEX.txt", 
+#else
+		"%s\\INDEX.txt", 
+#endif
+		input_path);
+
 	index_fp = fopen(index_path, "r");
 	if (!index_fp) {
 		printf("Error: Cannot open file [%s]\n", index_path);
@@ -163,7 +181,8 @@ static void open_index()
 
 static char *skip_line(char *str)
 {
-	char *out = strchr(str, '\n');
+	char *out = strchr(str, 0x0A);
+
 	if (!out) {
 		printf("Error: PGM/PPM has incorrect formatting, expected a header on one line followed by a newline\n");
 		exit(1);
@@ -184,7 +203,7 @@ int freenect_process_events(freenect_context *ctx)
 	 */
 
 	char type;
-	double record_cur_time;
+	double record_cur_time, cur_time;
 	unsigned int timestamp, data_size;
 	char *data = NULL;
 
@@ -193,11 +212,14 @@ int freenect_process_events(freenect_context *ctx)
 
 	if (parse_line(&type, &record_cur_time, &timestamp, &data_size, &data))
 		return -1;
+
 	// Sleep an amount that compensates for the original and current delays
 	// playback_ is w.r.t. the current time
 	// record_ is w.r.t. the original time period during the recording
 	if (record_prev_time != 0. && playback_prev_time != 0.)
+	{
 		sleep_highres((record_cur_time - record_prev_time) - (get_time() - playback_prev_time));
+	}
 	record_prev_time = record_cur_time;
 	switch (type) {
 		case 'd':
@@ -214,7 +236,15 @@ int freenect_process_events(freenect_context *ctx)
 			if (cur_rgb_cb && rgb_running) {
 				void *cur_rgb = skip_line(data);
 				if (rgb_buffer) {
-					memcpy(rgb_buffer, cur_rgb, FREENECT_VIDEO_RGB_SIZE);
+					/* For some reason there appears to be a few less items in the array than FREENECT_VIDEO_RGB_SIZE 
+					   which causes the program to crash when memcpy is run. */
+					memcpy(rgb_buffer, cur_rgb,
+#ifndef WIN32
+						FREENECT_VIDEO_RGB_SIZE
+#else
+						921521
+#endif
+						);
 					cur_rgb = rgb_buffer;
 				}
 				cur_rgb_cb(fake_dev, cur_rgb, timestamp);
