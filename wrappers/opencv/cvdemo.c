@@ -6,9 +6,10 @@
 IplImage *GlViewColor(IplImage *depth)
 {
 	static IplImage *image = 0;
-	if (!image) image = cvCreateImage(cvSize(640,480), 8, 3);
-	unsigned char *depth_mid = image->imageData;
+	unsigned char *depth_mid;
 	int i;
+	if (!image) image = cvCreateImage(cvSize(640,480), 8, 3);
+	depth_mid = (unsigned char *) image->imageData;
 	for (i = 0; i < 640*480; i++) {
 		int lb = ((short *)depth->imageData)[i] % 256;
 		int ub = ((short *)depth->imageData)[i] / 256;
@@ -55,14 +56,16 @@ IplImage *GlViewColor(IplImage *depth)
 
 int main(int argc, char **argv)
 {
+	IplImage *depth;
+	IplImage *image;
 	while (cvWaitKey(10) < 0) {
-		IplImage *image = freenect_sync_get_rgb_cv(0);
+		image = freenect_sync_get_rgb_cv(0);
 		if (!image) {
 		    printf("Error: Kinect not connected?\n");
 		    return -1;
 		}
 		cvCvtColor(image, image, CV_RGB2BGR);
-		IplImage *depth = freenect_sync_get_depth_cv(0);
+		depth = freenect_sync_get_depth_cv(0);
 		if (!depth) {
 		    printf("Error: Kinect not connected?\n");
 		    return -1;
