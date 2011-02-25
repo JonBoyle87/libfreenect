@@ -58,10 +58,21 @@ IplImage *GlViewColor(IplImage *depth)
 	return image;
 }
 
+//Do any processing you want on the images here
+void DoProcessing(IplImage* depth, IplImage* rgb, IplImage* depthOut, IplImage* rgbOut)
+{
+	depthOut = GlViewColor(depth);
+	rgbOut = rgb;
+}
+
 int main(int argc, char **argv)
 {
 	IplImage *depth;
 	IplImage *image;
+
+	IplImage *displayedDepth;
+	IplImage *displayedImage;
+
 	while (cvWaitKey(10) < 0) {
 		image = freenect_sync_get_rgb_cv(0);
 		if (!image) {
@@ -74,8 +85,11 @@ int main(int argc, char **argv)
 		    printf("Error: Kinect not connected?\n");
 		    return -1;
 		}
-		cvShowImage("RGB", image);
-		cvShowImage("Depth", GlViewColor(depth));
+
+		DoProcessing(depth,image,displayedDepth,displayedImage);
+
+		cvShowImage("RGB", displayedImage);
+		cvShowImage("Depth", displayedDepth);
 	}
 	return 0;
 }
