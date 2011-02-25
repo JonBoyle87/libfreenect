@@ -58,7 +58,7 @@ IplImage *GlViewColor(IplImage *depth)
 	return image;
 }
 
-//Do any processing you want on the images here
+//Do any processing you want on the images here, or rewrite as you wish.
 void DoProcessing(IplImage* depth, IplImage* rgb, IplImage* depthOut, IplImage* rgbOut)
 {
 	depthOut = GlViewColor(depth);
