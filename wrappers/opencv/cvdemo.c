@@ -59,10 +59,14 @@ IplImage *GlViewColor(IplImage *depth)
 }
 
 //Do any processing you want on the images here, or rewrite as you wish.
-void DoProcessing(IplImage* depth, IplImage* rgb, IplImage* depthOut, IplImage* rgbOut)
+IplImage* ProcessRGB(IplImage* rgb)
 {
-	depthOut = GlViewColor(depth);
-	rgbOut = rgb;
+	return rgb;
+}
+
+IplImage* ProcessDepth(IplImage* depth)
+{
+	return GlViewColor(depth);
 }
 
 int main(int argc, char **argv)
@@ -86,7 +90,8 @@ int main(int argc, char **argv)
 		    return -1;
 		}
 
-		DoProcessing(depth,image,displayedDepth,displayedImage);
+		displayedImage = ProcessRGB(image);
+		displayedDepth = ProcessDepth(depth);
 
 		cvShowImage("RGB", displayedImage);
 		cvShowImage("Depth", displayedDepth);
