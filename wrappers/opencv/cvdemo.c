@@ -61,12 +61,78 @@ IplImage *GlViewColor(IplImage *depth)
 //Do any processing you want on the images here, or rewrite as you wish.
 IplImage* ProcessRGB(IplImage* rgb)
 {
+	unsigned char r,g,b;
+	int x,y,p;
+	int index;
+
+	unsigned char *data = (unsigned char *)rgb->imageData;
+
+	/* There are two ways that you can access the data. The first way is a very slow way of doing things, as you have to
+	   calculate the index every time and have two loops to go through. This however can be easier to understand, and the
+	   equation for the index can be used to access the co-ordinates anywhere by substituting the y and x variables. 
+	   
+	   Make sure to remove what you aren't using.
+	*/
+	for(y = 0; y < 480; y++)
+	{
+		for(x = 0; x < 640; x++)
+		{
+			index = 3 * (y * 640 + x);
+
+			r = data[index]; //The data can be accessed here
+			g = data[index + 1];
+			b = data[index + 2];
+		}
+	}
+
+	/* The second way is a much faster way of doing things, but involves using pointers. As you don't have to recalculate
+	   the index every time, only adding 1 each time which is a fast operation, it's a lot faster. The order the pixels are stored are
+	   by row e.g. If there the image were 3 x 3 (x,y):
+
+	   (0,0) (1,0) (2,0) (0,1) (1,1) (2,1) (0,2) (1,2) (2,2)
+	*/
+
+	for(p = 0; p < 640 * 480; p++)
+	{
+		r = *data++; //The data can be accessed here
+		g = *data++;
+		b = *data++;
+	}
+
 	return rgb;
 }
 
 IplImage* ProcessDepth(IplImage* depth)
 {
-	return GlViewColor(depth);
+	int x,y,p,v,index;
+	unsigned char *data = (unsigned char *)depth->imageData;
+
+	//This function turns the depth image into colour. It's probably best that you do the processing on the original image rather than the colour.
+	IplImage* Colour = GlViewColor(depth);
+
+	/* If you want to do your processing on the colour image, then use the example of code from the ProcessRGB function. Otherwise, you'll
+	   be wanting to use what's below. The main difference here is that the depth image is Grayscale, so it only has one value per pixel.
+	   The first way is the slow way, and the second way is the fast way.
+
+	   Make sure to remove what you aren't using.
+	*/
+
+	for(y = 0; y < 480; y++)
+	{
+		for(x = 0; x < 640; x++)
+		{
+			index = 3 * (y * 640 + x);
+
+			v = data[index]; //The data can be accessed here
+		}
+	}
+
+	for(p = 0; p < 640 * 480; p++)
+	{
+		v = *data++; //The data can be accessed here
+	}
+
+	return Colour;
 }
 
 int main(int argc, char **argv)
