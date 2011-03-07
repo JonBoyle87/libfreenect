@@ -61,7 +61,7 @@ IplImage *GlViewColor(IplImage *depth)
 //Do any processing you want on the images here, or rewrite as you wish.
 IplImage* ProcessRGB(IplImage* rgb)
 {
-	unsigned char r,g,b;
+	unsigned char *r,*g,*b;
 	int x,y,p;
 	int index;
 
@@ -79,9 +79,13 @@ IplImage* ProcessRGB(IplImage* rgb)
 		{
 			index = 3 * (y * 640 + x);
 
-			r = data[index]; //The data can be accessed here
-			g = data[index + 1];
-			b = data[index + 2];
+			r = &data[index]; 
+			g = &data[index + 1];
+			b = &data[index + 2];
+
+			*r = *r; //The data can be accessed here
+			*g = *g;
+			*b = *b;
 		}
 	}
 
@@ -94,9 +98,13 @@ IplImage* ProcessRGB(IplImage* rgb)
 
 	for(p = 0; p < 640 * 480; p++)
 	{
-		r = *data++; //The data can be accessed here
-		g = *data++;
-		b = *data++;
+		r = data++; 
+		g = data++;
+		b = data++;
+
+		*r = *r; //The data can be accessed here
+		*g = *g;
+		*b = *b;
 	}
 
 	return rgb;
@@ -104,7 +112,8 @@ IplImage* ProcessRGB(IplImage* rgb)
 
 IplImage* ProcessDepth(IplImage* depth)
 {
-	int x,y,p,v,index;
+	int x,y,p,index;
+	unsigned char *v;
 	unsigned char *data = (unsigned char *)depth->imageData;
 
 	//This function turns the depth image into colour. It's probably best that you do the processing on the original image rather than the colour.
@@ -123,13 +132,17 @@ IplImage* ProcessDepth(IplImage* depth)
 		{
 			index = 3 * (y * 640 + x);
 
-			v = data[index]; //The data can be accessed here
+			v = &data[index]; 
+
+			*v = *v; //The data can be accessed here
 		}
 	}
 
 	for(p = 0; p < 640 * 480; p++)
 	{
-		v = *data++; //The data can be accessed here
+		v = data++;
+
+		*v = *v; //The data can be accessed here
 	}
 
 	return Colour;
