@@ -8,7 +8,7 @@
     <ProjectGuid>{360413F9-4D9B-46BE-BEC7-9B666850ED8C}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>freenect</RootNamespace>
-    <AssemblyName>freenect</AssemblyName>
+    <AssemblyName>freenectdotnet</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -71,6 +71,24 @@
     </Compile>
     <Compile Include="..\SwapBufferCollection.cs">
       <Link>SwapBufferCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\Enumerations.cs">
+      <Link>Enumerations.cs</Link>
+    </Compile>
+    <Compile Include="..\FrameMode.cs">
+      <Link>FrameMode.cs</Link>
+    </Compile>
+    <Compile Include="..\DepthFrameMode.cs">
+      <Link>DepthFrameMode.cs</Link>
+    </Compile>
+    <Compile Include="..\VideoFrameMode.cs">
+      <Link>VideoFrameMode.cs</Link>
+    </Compile>
+    <Compile Include="..\BaseCamera.cs">
+      <Link>BaseCamera.cs</Link>
+    </Compile>
+    <Compile Include="..\BaseDataMap.cs">
+      <Link>BaseDataMap.cs</Link>
     </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

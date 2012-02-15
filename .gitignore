@@ -29,3 +29,6 @@ obj/
 _ReSharper*/
 [Tt]est[Rr]esult*
 build
+/results/
+#ignore temporary ubuntu files
+*~

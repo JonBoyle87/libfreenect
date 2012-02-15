@@ -27,6 +27,7 @@
 #ifndef USB_LIBUSB10
 #define USB_LIBUSB10
 
+#include "libfreenect.h"
 #include <libusb-1.0/libusb.h>
 
 #if defined(__APPLE__)
@@ -68,6 +69,7 @@ typedef struct {
 typedef struct {
 	freenect_device *parent; //so we can go up from the libusb userdata
 	libusb_device_handle *dev;
+	int device_dead; // set to 1 when the underlying libusb_device_handle vanishes (ie, Kinect was unplugged)
 } fnusb_dev;
 
 typedef struct {
@@ -83,10 +85,12 @@ typedef struct {
 } fnusb_isoc_stream;
 
 int fnusb_num_devices(fnusb_ctx *ctx);
+int fnusb_list_device_attributes(fnusb_ctx *ctx, struct freenect_device_attributes** attribute_list);
 
 int fnusb_init(fnusb_ctx *ctx, freenect_usb_context *usb_ctx);
 int fnusb_shutdown(fnusb_ctx *ctx);
 int fnusb_process_events(fnusb_ctx *ctx);
+int fnusb_process_events_timeout(fnusb_ctx *ctx, struct timeval* timeout);
 
 int fnusb_open_subdevices(freenect_device *dev, int index);
 int fnusb_close_subdevices(freenect_device *dev);
@@ -95,6 +99,9 @@ int fnusb_start_iso(fnusb_dev *dev, fnusb_isoc_stream *strm, fnusb_iso_cb cb, in
 int fnusb_stop_iso(fnusb_dev *dev, fnusb_isoc_stream *strm);
 
 int fnusb_control(fnusb_dev *dev, uint8_t bmRequestType, uint8_t bRequest, uint16_t wValue, uint16_t wIndex, uint8_t *data, uint16_t wLength);
-
+#ifdef BUILD_AUDIO
+int fnusb_bulk(fnusb_dev *dev, uint8_t endpoint, uint8_t *data, int len, int *transferred);
+int fnusb_num_interfaces(fnusb_dev *dev);
+#endif
 
 #endif

@@ -1,7 +1,7 @@
 ######################################################################################
 # Fakenect Mock Library
 ######################################################################################
-SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/utils)
+SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib/fakenect)
 IF(WIN32)
 add_library (fakenect SHARED fakenect.c wintime.h)
@@ -21,4 +21,15 @@ add_executable(record record.c wintime.h)
 ELSE(WIN32)
 add_executable(record record.c)
 ENDIF(WIN32)
-target_link_libraries(record freenect)
+
+target_link_libraries(record freenect m)
+install (TARGETS record
+  DESTINATION bin)
+
+CONFIGURE_FILE("fakenect.sh.in"
+  "fakenect.sh"
+  IMMEDIATE @ONLY)
+install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fakenect.sh
+  DESTINATION bin
+  RENAME fakenect)
+

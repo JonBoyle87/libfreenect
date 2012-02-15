@@ -41,13 +41,15 @@ cmake_minimum_required(VERSION 2.6)
 PROJECT(libfreenect)
 
 set (PROJECT_VER_MAJOR 0)
-set (PROJECT_VER_MINOR 0)
-set (PROJECT_VER_PATCH 1)
+set (PROJECT_VER_MINOR 1)
+set (PROJECT_VER_PATCH 2)
 set (PROJECT_VER 
   "${PROJECT_VER_MAJOR}.${PROJECT_VER_MINOR}.${PROJECT_VER_PATCH}")
 set (PROJECT_APIVER 
   "${PROJECT_VER_MAJOR}.${PROJECT_VER_MINOR}")
 
+OPTION(BUILD_AUDIO "Build audio support" OFF)
+OPTION(BUILD_REDIST_PACKAGE "Build libfreenect in a legally-redistributable manner (only affects audio)" OFF)
 OPTION(BUILD_EXAMPLES "Build example programs" ON)
 OPTION(BUILD_FAKENECT "Build fakenect mock library" ON)
 OPTION(BUILD_C_SYNC "Build c synchronous library" ON)
@@ -80,6 +82,10 @@ if(BIG_ENDIAN)
   add_definitions(-DFN_BIGENDIAN)
 endif()
 
+if(BUILD_AUDIO)
+  add_definitions(-DBUILD_AUDIO)
+endif()
+
 ######################################################################################
 # CMake 
 ######################################################################################
@@ -92,6 +98,10 @@ SET(DOC_OUTPUT_PATH ${CMAKE_BINARY_DIR}/doc)
 if(CMAKE_C_FLAGS STREQUAL "")
   set(CMAKE_C_FLAGS "-O2")
 endif()
+SET(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG=1")
+SET(CMAKE_C_FLAGS_RELEASE "-O2")
+SET(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -g")
+
 add_definitions(-Wall)
 
 # Pretty much everyone is going to need the main includes
@@ -172,11 +182,14 @@ IF ( BUILD_CPACK )
   include(CPack)
 
   INSTALL(FILES "${CMAKE_BINARY_DIR}/lib/libfreenect.a" DESTINATION ${PROJECT_LIBRARY_INSTALL_DIR})
+  if (BUILD_AUDIO)
+    INSTALL(FILES "include/libfreenect-audio.h" DESTINATION ${PROJECT_INCLUDE_INSTALL_DIR})
+  endif()
   INSTALL(FILES "include/libfreenect.h" DESTINATION ${PROJECT_INCLUDE_INSTALL_DIR})
+  INSTALL(FILES "include/libfreenect-registration.h" DESTINATION ${PROJECT_INCLUDE_INSTALL_DIR})
   INSTALL(FILES "APACHE20" DESTINATION "share/doc/${CPACK_PACKAGE_NAME}")
   INSTALL(FILES "GPL2" DESTINATION "share/doc/${CPACK_PACKAGE_NAME}")
   INSTALL(FILES "README.asciidoc" DESTINATION "share/doc/${CPACK_PACKAGE_NAME}")
-  INSTALL(FILES "doc/kinect_protocol.asciidoc" DESTINATION "share/doc/${CPACK_PACKAGE_NAME}")
 
 ENDIF ( BUILD_CPACK )
 
