@@ -38,13 +38,7 @@
 #include <time.h>
 #else
 #include <Windows.h>
-#include "wintime.h"
-
-//Windows defines of sleep and usleep. usleep not as accurate as Linux version.
-#define sleep(x) SleepEx(x*1000,TRUE);
-#define usleep(x) SleepEx(x/1000,TRUE);
-
-#define snprintf sprintf_s 
+#include "wintime.h" 
 #endif
 
 
@@ -337,7 +331,7 @@ freenect_frame_mode freenect_find_video_mode(freenect_resolution res, freenect_v
     assert(FREENECT_VIDEO_RGB == fmt);
     // NOTE: This will leave uninitialized values if new fields are added.
     // To update this line run the "record" program, look at the top output
-    freenect_frame_mode out = {256, 1, {0}, 921600, 640, 480, 24, 0, 30, 1};
+    freenect_frame_mode out = {256, FREENECT_RESOLUTION_MEDIUM, {0}, 921600, 640, 480, 24, 0, 30, 1};
     return out;
 }
 
@@ -346,7 +340,7 @@ freenect_frame_mode freenect_find_depth_mode(freenect_resolution res, freenect_d
     assert(FREENECT_DEPTH_11BIT == fmt);
     // NOTE: This will leave uninitialized values if new fields are added.
     // To update this line run the "record" program, look at the top output
-    freenect_frame_mode out = {256, 1, {0}, 614400, 640, 480, 11, 5, 30, 1};
+    freenect_frame_mode out = {256, FREENECT_RESOLUTION_MEDIUM, {0}, 614400, 640, 480, 11, 5, 30, 1};
     return out;
 }
 

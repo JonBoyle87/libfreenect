@@ -24,7 +24,7 @@
  * either License.
  */
 
-//This code was found at http://social.msdn.microsoft.com/Forums/en/vcgeneral/thread/430449b3-f6dd-4e18-84de-eebd26a8d668 and has been slightly modified to work with OpenKinect
+//This code was found at http://social.msdn.microsoft.com/Forums/en/vcgeneral/thread/430449b3-f6dd-4e18-84de-eebd26a8d668 and has been modified to work with OpenKinect
 
 #ifdef WIN32
 
@@ -36,6 +36,12 @@
 #else
 	#define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL
 #endif
+
+//Windows defines of sleep and usleep. usleep not as accurate as Linux version.
+#define sleep(x) SleepEx(x*1000,TRUE);
+#define usleep(x) SleepEx(x/1000,TRUE);
+
+#define snprintf sprintf_s
 
 struct timezone 
 {
