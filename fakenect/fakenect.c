@@ -327,20 +327,20 @@ int freenect_set_depth_mode(freenect_device* dev, const freenect_frame_mode mode
 }
 
 freenect_frame_mode freenect_find_video_mode(freenect_resolution res, freenect_video_format fmt) {
-    assert(FREENECT_RESOLUTION_MEDIUM == res);
-    assert(FREENECT_VIDEO_RGB == fmt);
     // NOTE: This will leave uninitialized values if new fields are added.
     // To update this line run the "record" program, look at the top output
-    freenect_frame_mode out = {256, FREENECT_RESOLUTION_MEDIUM, {0}, 921600, 640, 480, 24, 0, 30, 1};
+	freenect_frame_mode out = {256, FREENECT_RESOLUTION_MEDIUM, {0}, 921600, 640, 480, 24, 0, 30, 1};
+	assert(FREENECT_RESOLUTION_MEDIUM == res);
+    assert(FREENECT_VIDEO_RGB == fmt);
     return out;
 }
 
 freenect_frame_mode freenect_find_depth_mode(freenect_resolution res, freenect_depth_format fmt) {
-    assert(FREENECT_RESOLUTION_MEDIUM == res);
-    assert(FREENECT_DEPTH_11BIT == fmt);
     // NOTE: This will leave uninitialized values if new fields are added.
     // To update this line run the "record" program, look at the top output
     freenect_frame_mode out = {256, FREENECT_RESOLUTION_MEDIUM, {0}, 614400, 640, 480, 11, 5, 30, 1};
+	assert(FREENECT_RESOLUTION_MEDIUM == res);
+    assert(FREENECT_DEPTH_11BIT == fmt);
     return out;
 }
 

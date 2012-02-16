@@ -6,11 +6,12 @@
 IplImage *GlViewColor(IplImage *depth)
 {
 	static IplImage *image = 0;
+	unsigned char *depth_mid;
+	int i;
 
 	if (!image) image = cvCreateImage(cvSize(640,480), 8, 3);
-	unsigned char *depth_mid = (unsigned char*)(image->imageData);
+	depth_mid = (unsigned char*)(image->imageData);
 
-	int i;
 	if (!image) image = cvCreateImage(cvSize(640,480), 8, 3);
 	depth_mid = (unsigned char *) image->imageData;
 	for (i = 0; i < 640*480; i++) {

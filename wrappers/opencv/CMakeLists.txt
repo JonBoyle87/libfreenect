@@ -16,7 +16,14 @@ install (TARGETS freenect_cv
 install (FILES "libfreenect_cv.h"
   DESTINATION ${PROJECT_INCLUDE_INSTALL_DIR})
 
+if(MSVC)
+add_executable(cvdemo cvdemo.c libfreenect_cv.c)
+target_link_libraries(cvdemo freenect freenect_sync ${OpenCV_LIBS})
+else(MSVC)
 add_executable(cvdemo cvdemo.c)
 target_link_libraries(cvdemo freenect freenect_sync freenect_cv ${OpenCV_LIBS})
+endif(MSVC)
+
+
 install (TARGETS cvdemo
   DESTINATION bin)
