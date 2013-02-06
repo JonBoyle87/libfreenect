@@ -56,7 +56,8 @@ else()
   find_package(OpenGL REQUIRED)
   find_package(GLUT REQUIRED)
 
-  include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIRS} ${USB_INCLUDE_DIRS})
+  include_directories(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIR} ${USB_INCLUDE_DIRS})
+  message("${GLUT_INCLUDE_DIR}")
 
   target_link_libraries(glview freenect ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${MATH_LIB})
   target_link_libraries(regview freenect ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${MATH_LIB})
