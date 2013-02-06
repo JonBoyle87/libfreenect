@@ -265,7 +265,7 @@ FILE *open_index(const char *fn)
                "use a different directory.\n");
         return 0;
     }
-    fp = fopen(fn, "w");
+    fp = fopen(fn, "wb");
     if (!fp) {
         printf("Error: Cannot open file [%s]\n", fn);
         return 0;
@@ -344,8 +344,8 @@ int main(int argc, char **argv)
 		if (rgb_stream) fclose(rgb_stream);
 		fclose(index_fp);
 	} else {
-#ifdef WIN32
-		CreateDirectory(out_dir,NULL);
+#ifdef _WIN32
+		_mkdir(out_dir);
 #else
 		mkdir(out_dir, S_IRWXU | S_IRWXG | S_IRWXO);
 #endif

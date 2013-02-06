@@ -38,7 +38,7 @@
 #define RESERVED_TO_FORMAT(reserved) ((reserved) & 0xff)
 
 #define video_mode_count 12
-freenect_frame_mode supported_video_modes[video_mode_count] = {
+static freenect_frame_mode supported_video_modes[video_mode_count] = {
 	// reserved, resolution, format, bytes, width, height, data_bits_per_pixel, padding_bits_per_pixel, framerate, is_valid
 	{MAKE_RESERVED(FREENECT_RESOLUTION_HIGH,   FREENECT_VIDEO_RGB), FREENECT_RESOLUTION_HIGH, {FREENECT_VIDEO_RGB}, 1280*1024*3, 1280, 1024, 24, 0, 10, 1 },
 	{MAKE_RESERVED(FREENECT_RESOLUTION_MEDIUM, FREENECT_VIDEO_RGB), FREENECT_RESOLUTION_MEDIUM, {FREENECT_VIDEO_RGB}, 640*480*3, 640,  480, 24, 0, 30, 1 },
@@ -61,7 +61,7 @@ freenect_frame_mode supported_video_modes[video_mode_count] = {
 };
 
 #define depth_mode_count 6
-freenect_frame_mode supported_depth_modes[depth_mode_count] = {
+static freenect_frame_mode supported_depth_modes[depth_mode_count] = {
 	// reserved, resolution, format, bytes, width, height, data_bits_per_pixel, padding_bits_per_pixel, framerate, is_valid
 	{MAKE_RESERVED(FREENECT_RESOLUTION_MEDIUM, FREENECT_DEPTH_11BIT), FREENECT_RESOLUTION_MEDIUM, {FREENECT_DEPTH_11BIT}, 640*480*2, 640, 480, 11, 5, 30, 1},
 	{MAKE_RESERVED(FREENECT_RESOLUTION_MEDIUM, FREENECT_DEPTH_10BIT), FREENECT_RESOLUTION_MEDIUM, {FREENECT_DEPTH_10BIT}, 640*480*2, 640, 480, 10, 6, 30, 1},
@@ -688,7 +688,8 @@ static int send_cmd(freenect_device *dev, uint16_t cmd, void *cmdbuf, unsigned i
 
 	do {
 		actual_len = fnusb_control(&dev->usb_cam, 0xc0, 0, 0, 0, ibuf, 0x200);
-	} while (actual_len == 0);
+		FN_FLOOD("actual_len: %d\n", actual_len);
+	} while ((actual_len == 0) || (actual_len == 0x200));
 	FN_SPEW("Control reply: %d\n", res);
 	if (actual_len < (int)sizeof(*rhdr)) {
 		FN_ERROR("send_cmd: Input control transfer failed (%d)\n", res);
@@ -910,15 +911,25 @@ static int freenect_fetch_zero_plane_info(freenect_device *dev)
 	}
 
 	memcpy(&(dev->registration.zero_plane_info), reply + 94, sizeof(dev->registration.zero_plane_info));
-	uint32_t temp;
-	temp = fn_le32(*((uint32_t*)(&dev->registration.zero_plane_info.dcmos_emitter_dist)));
-	dev->registration.zero_plane_info.dcmos_emitter_dist   = *((float*)(&temp));
-	temp = fn_le32(*((uint32_t*)(&dev->registration.zero_plane_info.dcmos_rcmos_dist)));
-	dev->registration.zero_plane_info.dcmos_rcmos_dist     = *((float*)(&temp));
-	temp = fn_le32(*((uint32_t*)(&dev->registration.zero_plane_info.reference_distance)));
-	dev->registration.zero_plane_info.reference_distance   = *((float*)(&temp));
-	temp = fn_le32(*((uint32_t*)(&dev->registration.zero_plane_info.reference_pixel_size)));
-	dev->registration.zero_plane_info.reference_pixel_size = *((float*)(&temp));
+	union {
+		uint32_t ui;
+		float f;
+	} conversion_union;
+	conversion_union.f = dev->registration.zero_plane_info.dcmos_emitter_dist;
+	conversion_union.ui = fn_le32(conversion_union.ui);
+	dev->registration.zero_plane_info.dcmos_emitter_dist = conversion_union.f;
+
+	conversion_union.f = dev->registration.zero_plane_info.dcmos_rcmos_dist;
+	conversion_union.ui = fn_le32(conversion_union.ui);
+	dev->registration.zero_plane_info.dcmos_rcmos_dist = conversion_union.f;
+
+	conversion_union.f = dev->registration.zero_plane_info.reference_distance;
+	conversion_union.ui = fn_le32(conversion_union.ui);
+	dev->registration.zero_plane_info.reference_distance = conversion_union.f;
+
+	conversion_union.f = dev->registration.zero_plane_info.reference_pixel_size;
+	conversion_union.ui = fn_le32(conversion_union.ui);
+	dev->registration.zero_plane_info.reference_pixel_size = conversion_union.f;
 
 	// WTF is all this data?  it's way bigger than sizeof(XnFixedParams)...
 	FN_SPEW("dcmos_emitter_distance: %f\n", dev->registration.zero_plane_info.dcmos_emitter_dist);
@@ -1323,7 +1334,7 @@ int freenect_set_video_buffer(freenect_device *dev, void *buf)
 	return stream_setbuf(dev->parent, &dev->video, buf);
 }
 
-int freenect_camera_init(freenect_device *dev)
+FN_INTERNAL int freenect_camera_init(freenect_device *dev)
 {
 	freenect_context *ctx = dev->parent;
 	int res;
@@ -1347,7 +1358,7 @@ int freenect_camera_init(freenect_device *dev)
 	return 0;
 }
 
-int freenect_camera_teardown(freenect_device *dev)
+FN_INTERNAL int freenect_camera_teardown(freenect_device *dev)
 {
 	freenect_context *ctx = dev->parent;
 	int res = 0;
