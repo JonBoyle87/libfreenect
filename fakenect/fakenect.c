@@ -33,6 +33,7 @@
 #include <assert.h>
 #ifdef _WIN32
 #include <windows.h>
+#define snprintf sprintf_s
 #endif
 
 #define GRAVITY 9.80665
@@ -45,7 +46,7 @@ static freenect_depth_cb cur_depth_cb = NULL;
 static freenect_video_cb cur_rgb_cb = NULL;
 static char *input_path = NULL;
 static FILE *index_fp = NULL;
-static freenect_raw_tilt_state state = {};
+static freenect_raw_tilt_state state;
 static int already_warned = 0;
 static double playback_prev_time = 0.;
 static double record_prev_time = 0.;
@@ -76,16 +77,19 @@ static double get_time()
 {
 #ifdef _WIN32
 	SYSTEMTIME st;
-	GetSystemTime(&st);
 	FILETIME ft;
-	SystemTimeToFileTime(&st, &ft);
 	ULARGE_INTEGER li;
+	uint64_t total_usecs;
+
+	GetSystemTime(&st);
+	SystemTimeToFileTime(&st, &ft);
+	
 	li.LowPart = ft.dwLowDateTime;
 	li.HighPart = ft.dwHighDateTime;
 	// FILETIME is given as a 64-bit value for the number of 100-nanosecond
 	// intervals that have passed since Jan 1, 1601 (UTC).  The difference between that
 	// epoch and the POSIX epoch (Jan 1, 1970) is 116444736000000000 such ticks.
-	uint64_t total_usecs = (li.QuadPart - 116444736000000000L) / 10L;
+	total_usecs = (li.QuadPart - 116444736000000000L) / 10L;
 	return (total_usecs / 1000000.);
 #else
 	struct timeval cur;
@@ -114,25 +118,29 @@ static char *one_line(FILE *fp)
 
 static int get_data_size(FILE *fp)
 {
-	int orig = ftell(fp);
+	int orig = ftell(fp), out;
 	fseek(fp, 0L, SEEK_END);
-	int out = ftell(fp);
+	out = ftell(fp);
 	fseek(fp, orig, SEEK_SET);
 	return out;
 }
 
 static int parse_line(char *type, double *cur_time, unsigned int *timestamp, unsigned int *data_size, char **data)
 {
+	int file_path_size;
+	char *file_path;
+	FILE *cur_fp;
 	char *line = one_line(index_fp);
 	if (!line) {
 		printf("Warning: No more lines in [%s]\n", input_path);
 		return -1;
 	}
-	int file_path_size = strlen(input_path) + strlen(line) + 50;
-	char *file_path = malloc(file_path_size);
+	file_path_size = strlen(input_path) + strlen(line) + 50;
+	file_path = (char *) malloc(file_path_size);
+	
 	snprintf(file_path, file_path_size, "%s/%s", input_path, line);
 	// Open file
-	FILE *cur_fp = fopen(file_path, "rb");
+	cur_fp = fopen(file_path, "rb");
 	if (!cur_fp) {
 		printf("Error: Cannot open file [%s]\n", file_path);
 		exit(1);
@@ -153,13 +161,16 @@ static int parse_line(char *type, double *cur_time, unsigned int *timestamp, uns
 
 static void open_index()
 {
+	int index_path_size;
+	char *index_path;
 	input_path = getenv("FAKENECT_PATH");
 	if (!input_path) {
 		printf("Error: Environmental variable FAKENECT_PATH is not set.  Set it to a path that was created using the 'record' utility.\n");
 		exit(1);
 	}
-	int index_path_size = strlen(input_path) + 50;
-	char *index_path = malloc(index_path_size);
+	index_path_size = strlen(input_path) + 50;
+	index_path = (char *)malloc(index_path_size);
+
 	snprintf(index_path, index_path_size, "%s/INDEX.txt", input_path);
 	index_fp = fopen(index_path, "rb");
 	if (!index_fp) {
@@ -190,12 +201,14 @@ int freenect_process_events(freenect_context *ctx)
 	   best as we can to match those from the original data and current run
 	   conditions (e.g., if it takes longer to run this code then we wait less).
 	 */
-	if (!index_fp)
-		open_index();
 	char type;
 	double record_cur_time;
 	unsigned int timestamp, data_size;
 	char *data = NULL;
+
+	if (!index_fp)
+		open_index();
+
 	if (parse_line(&type, &record_cur_time, &timestamp, &data_size, &data))
 		return -1;
 	// Sleep an amount that compensates for the original and current delays
@@ -290,20 +303,21 @@ int freenect_set_depth_mode(freenect_device* dev, const freenect_frame_mode mode
 }
 
 freenect_frame_mode freenect_find_video_mode(freenect_resolution res, freenect_video_format fmt) {
-    assert(FREENECT_RESOLUTION_MEDIUM == res);
+	freenect_frame_mode out = {256, 1, {0}, 921600, 640, 480, 24, 0, 30, 1};
+	assert(FREENECT_RESOLUTION_MEDIUM == res);
     assert(FREENECT_VIDEO_RGB == fmt);
     // NOTE: This will leave uninitialized values if new fields are added.
     // To update this line run the "record" program, look at the top output
-    freenect_frame_mode out = {256, 1, {0}, 921600, 640, 480, 24, 0, 30, 1};
     return out;
 }
 
 freenect_frame_mode freenect_find_depth_mode(freenect_resolution res, freenect_depth_format fmt) {
-    assert(FREENECT_RESOLUTION_MEDIUM == res);
+    
+	freenect_frame_mode out = {256, 1, {0}, 614400, 640, 480, 11, 5, 30, 1};
+	assert(FREENECT_RESOLUTION_MEDIUM == res);
     assert(FREENECT_DEPTH_11BIT == fmt);
     // NOTE: This will leave uninitialized values if new fields are added.
     // To update this line run the "record" program, look at the top output
-    freenect_frame_mode out = {256, 1, {0}, 614400, 640, 480, 11, 5, 30, 1};
     return out;
 }
 
